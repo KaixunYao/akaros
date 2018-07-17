@@ -377,6 +377,39 @@ void sem_down(struct semaphore *sem)
 	/* Make sure we aren't holding any locks (only works if SPINLOCK_DEBUG) */
 	if (pcpui->lock_depth)
 		panic("Kthread tried to sleep, with lockdepth %d\n", pcpui->lock_depth);
+//	XXX
+//			we could attempt to sem_down before we have kthreads.  that's been
+//			the case for a while (arena init)
+//
+//			the check we're doing is wrong - not IS_RCU_KTASK, but in an RCU CB
+// 				can use a kth flag or a PCPU depth
+// 				maybe depth and also check a new flag in can_block
+
+// XXX this is broken, but shouldn't be in that case.  what's up?
+//			also, this was set during pmem arena init.  why did they even think
+//			this was true?  was that flag set?  current_kthread not set yet?
+//
+//			it's not set, we're reading gibberish
+//
+//			what happens if someone calls rcu_barrier / sync before kth is up?
+//
+//			would like to at least have the 0 pg unmapped
+//				yeah, but if we do it before the IDT is up, we're fucked.
+//
+//			looks like it is because the lowmem is still mapped.
+//				when can we hop off of that?
+//				at least pg 0
+//				earlier, i might have stayed on it, maybe due the stack
+//				right now, we do it after smp_boot, once the tramp page is done
+//					might just be for the trampoline_pg
+//
+//	if (is_rcu_ktask(current_kthread)) {
+//		printk("ct %p\n", current_kthread);
+//		printk("&ct f%p\n", &current_kthread->flags);
+//		printk("ct f%p\n", current_kthread->flags);
+//		panic("Tried to sleep from an RCU callback!");
+//	}
+
 	/* Try to down the semaphore.  If there is a signal there, we can skip all
 	 * of the sleep prep and just return. */
 #ifdef CONFIG_SEM_SPINWAIT

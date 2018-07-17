@@ -62,6 +62,24 @@ protcseg:
 	orl		$(CR0_PE | CR0_PG | CR0_WP | CR0_NE | CR0_MP), %eax
 	andl	$(~(CR0_AM | CR0_TS | CR0_EM | CR0_CD | CR0_NW)), %eax
 	movl	%eax, %cr0
+
+	# paging is on, but we don't have that low page mapped.  hence the crash
+	# here
+	# 		even if we made this work, we'd probably want pg 0 mapped until the
+	# 		IDT is up
+	#
+	# 		1)maybe smp boot in entry.S and pause
+	# 				lock after long_mode
+	# 		2)faster syscalls with bools and whatnot.  see email
+	# 		3)can_block in rendez + call_rcu ctx flag in pcpui
+	#	 	4) PFs/traps (Double fault) in the kernel - the panic is useless and the manual BT would be better.  similarly, do we always get the TF?
+	# 			we actually do print those out
+	# 			also, we panic when we know we don't need to print it, like for all faults.  let's not print that
+	#			should have panic_nobt, and _panic() takes a hw_tf to print
+	#
+
+	#1:jmp 1b
+
 	# load the 64bit GDT and jump to long mode (symbol from entry64)
 	lgdt	gdt64desc
 	# Want to jump to the label long_mode, but we need to relocate to code
